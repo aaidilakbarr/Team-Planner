@@ -7,6 +7,10 @@ import CalendarView from './components/CalendarView';
 import ContentList from './components/ContentList';
 import ContentModal from './components/ContentModal';
 import TeamView from './components/TeamView';
+import Login from './components/Login';
+import Inbox from './components/Inbox';
+import Settings from './components/Settings';
+import Help from './components/Help';
 import { 
   seedInitialData, 
   getAllContents, 
@@ -31,6 +35,28 @@ export default function App() {
   const [contents, setContents] = useState([]);
   const [targets, setTargets] = useState({});
   const [dbLoading, setDbLoading] = useState(true);
+
+  // Auth Session States
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('donezo_current_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  // Global Notifications State
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem('donezo_notifications');
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: 1, text: "Alexandra Deff menyelesaikan tugas 'Develop API Endpoints'", timestamp: new Date(Date.now() - 1200000).toISOString(), read: false },
+      { id: 2, text: "Edwin Adenike mengubah status tugas 'Onboarding Flow' menjadi In Progress", timestamp: new Date(Date.now() - 3600000).toISOString(), read: false },
+      { id: 3, text: "David Oshodi menyukai notes di konten 'Setup Workspace Minimalis 2026'", timestamp: new Date(Date.now() - 7200000).toISOString(), read: true }
+    ];
+  });
+
+  // Sync notifications to localStorage
+  useEffect(() => {
+    localStorage.setItem('donezo_notifications', JSON.stringify(notifications));
+  }, [notifications]);
 
   // Modal editor states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -164,6 +190,37 @@ export default function App() {
   const totalCount = contents.length;
   const publishedCount = contents.filter(c => c.status === 'Published').length;
 
+  const handleAddNotification = (text) => {
+    const newNotif = {
+      id: Date.now(),
+      text,
+      timestamp: new Date().toISOString(),
+      read: false
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+  };
+
+  const handleUpdateUser = (updatedUser) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('donezo_current_user', JSON.stringify(updatedUser));
+    
+    // Update in registered users pool
+    const users = JSON.parse(localStorage.getItem('donezo_registered_users')) || [];
+    const updatedUsers = users.map(u => u.email === updatedUser.email ? updatedUser : u);
+    localStorage.setItem('donezo_registered_users', JSON.stringify(updatedUsers));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('donezo_current_user');
+    setCurrentUser(null);
+    setActiveView('dashboard');
+  };
+
+  // Render Login view if user is not authenticated
+  if (!currentUser) {
+    return <Login onLoginSuccess={setCurrentUser} />;
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans transition-colors duration-300">
       {/* Sidebar Navigation */}
@@ -172,6 +229,7 @@ export default function App() {
         setActiveView={setActiveView} 
         totalCount={totalCount}
         publishedCount={publishedCount}
+        onLogout={handleLogout}
       />
 
       {/* Main Container */}
@@ -183,6 +241,10 @@ export default function App() {
           darkMode={darkMode}
           toggleDarkMode={toggleDarkMode}
           activeView={activeView}
+          setActiveView={setActiveView}
+          currentUser={currentUser}
+          notifications={notifications}
+          setNotifications={setNotifications}
         />
 
         {/* View content panel */}
@@ -243,6 +305,30 @@ export default function App() {
               {activeView === 'team' && (
                 <div className="animate-page-in h-full">
                   <TeamView contents={contents} />
+                </div>
+              )}
+
+              {activeView === 'inbox' && (
+                <div className="animate-page-in h-full">
+                  <Inbox 
+                    currentUser={currentUser} 
+                    onAddNotification={handleAddNotification} 
+                  />
+                </div>
+              )}
+
+              {activeView === 'settings' && (
+                <div className="animate-page-in h-full">
+                  <Settings 
+                    currentUser={currentUser} 
+                    onUpdateUser={handleUpdateUser} 
+                  />
+                </div>
+              )}
+
+              {activeView === 'help' && (
+                <div className="animate-page-in h-full">
+                  <Help />
                 </div>
               )}
             </div>

@@ -11,7 +11,7 @@ import {
   Download
 } from 'lucide-react';
 
-export default function Sidebar({ activeView, setActiveView, totalCount, publishedCount }) {
+export default function Sidebar({ activeView, setActiveView, totalCount, publishedCount, onLogout }) {
   const remainingCount = totalCount - publishedCount;
   const badgeText = remainingCount > 0 ? (remainingCount > 12 ? '12+' : remainingCount) : '12+';
 
@@ -30,11 +30,15 @@ export default function Sidebar({ activeView, setActiveView, totalCount, publish
   ];
 
   const handleItemClick = (id) => {
-    // If it's a supported view, switch it. Otherwise, show a placeholder toast.
-    if (['dashboard', 'kanban', 'calendar', 'list', 'team'].includes(id)) {
+    if (id === 'logout') {
+      if (window.confirm('Apakah Anda yakin ingin keluar dari akun?')) {
+        onLogout();
+      }
+      return;
+    }
+
+    if (['dashboard', 'kanban', 'calendar', 'list', 'team', 'settings', 'help', 'inbox'].includes(id)) {
       setActiveView(id);
-    } else {
-      alert(`Fitur "${id}" akan segera hadir di Donezo Premium!`);
     }
   };
 
@@ -123,7 +127,11 @@ export default function Sidebar({ activeView, setActiveView, totalCount, publish
                   }`} />
 
                   <div className="flex items-center gap-3 pl-0.5 group-hover:translate-x-1 transition-transform duration-200">
-                    <Icon className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200" />
+                    <Icon className={`w-4 h-4 ${
+                      isActive 
+                        ? 'text-[#0A5C36] dark:text-[#4ADE80]' 
+                        : 'text-slate-400 group-hover:text-slate-650 dark:group-hover:text-slate-200'
+                    }`} />
                     <span>{item.name}</span>
                   </div>
                 </button>
